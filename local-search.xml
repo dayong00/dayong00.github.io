@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  
+  
+  
+  <entry>
+    <title>Python 调用争渡读屏、NVDA 开放语音 API 示例</title>
+    <link href="/2023/05/31/python-speak-api/"/>
+    <url>/2023/05/31/python-speak-api/</url>
+    
+    <content type="html"><![CDATA[<h2 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h2><p>目前<a href="https://zdsr.com/">争渡读屏</a>和 <a href="https://nvaccess.org/">NVDA</a> 两款屏幕阅读器开放了语音 API 接口。第三方软件在接入 API 后，程序可主动调用争渡或 NVDA 屏幕阅读器朗读文本，NVDA 还支持输出到盲文显示屏。<br>鉴于争渡读屏官方只给出了 C# 参考代码，而 NVDA 给出的 Python 代码有一点小 bug，故本文将分为两部分，分别展示使用 Python 调用两款屏幕阅读器开放语音 API 的示例。</p><h2 id="争渡读屏"><a href="#争渡读屏" class="headerlink" title="争渡读屏"></a>争渡读屏</h2><p>语音控制组 用户程序可将自己的程序信息发送到争渡读屏进行朗读,采用 windll 调用方式。dll 文件可在争渡读屏安装目录 <code>C:\Program Files (x86)\zdsr\zdsr*</code> 内找到。</p><ul><li>32位：ZDSRAPI.dll</li><li>64位： ZDSRAPI_x64.dll</li></ul><p>将 dll 文件放在程序同级目录即可调用。</p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><code class="hljs Python"><span class="hljs-keyword">import</span> ctypes<br><span class="hljs-keyword">import</span> time<br><br><span class="hljs-comment">#加载 ZDSR 64位 API</span><br>ZDSRAPILib=ctypes.windll.LoadLibrary(<span class="hljs-string">&#x27;./ZDSRAPI_x64.dll&#x27;</span>)<br><br><span class="hljs-comment">#初始化语音接口</span><br>ZDSRAPILib.InitTTS(<span class="hljs-built_in">type</span>=<span class="hljs-number">1</span>, channelName=<span class="hljs-string">&quot;测试API&quot;</span>, KeyDownInterrupt=<span class="hljs-literal">True</span>)<br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><span class="hljs-string">参数:</span><br><span class="hljs-string">type: 0 读屏通道; 1 独立通道</span><br><span class="hljs-string">channelName: type为0时忽略,传入NULL; type为1时:独立通道名称, NULL或空字符串时,将使用默认名称&quot;API&quot;</span><br><span class="hljs-string">KeyDownInterrupt: TRUE 按键打断; FALSE 按键不打断</span><br><span class="hljs-string">返回值:</span><br><span class="hljs-string">0: 成功</span><br><span class="hljs-string">1: 版本不匹配</span><br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><span class="hljs-comment">#朗读文本</span><br>ZDSRAPILib.Speak(<span class="hljs-string">&quot;这是 Python 调用 ZDSR API 的语音合成示例&quot;</span>)<br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><span class="hljs-string">参数:</span><br><span class="hljs-string">text: 要朗读的文本,Unicode</span><br><span class="hljs-string">Interrupt: TRUE:清空排队,立刻打断朗读, FALSE:等待空闲时朗读</span><br><span class="hljs-string">返回值:</span><br><span class="hljs-string">0: 成功</span><br><span class="hljs-string">1: 版本不匹配</span><br><span class="hljs-string">2: ZDSR没有运行</span><br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><span class="hljs-comment">#获取朗读状态</span><br><span class="hljs-built_in">print</span>(ZDSRAPILib.GetSpeakState())<br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><span class="hljs-string">返回值:</span><br><span class="hljs-string">1: 版本不匹配</span><br><span class="hljs-string">2: ZDSR没有运行</span><br><span class="hljs-string">3: 正在朗读</span><br><span class="hljs-string">4: 没有朗读</span><br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br>time.sleep(<span class="hljs-number">3</span>)<br><br><span class="hljs-comment">#停止朗读</span><br>ZDSRAPILib.StopSpeak()<br></code></pre></td></tr></table></figure><h2 id="NVDA"><a href="#NVDA" class="headerlink" title="NVDA"></a>NVDA</h2><p>以下内容来自官方说明文档，内容非常全面。</p><blockquote><p>NVDA 控制器客户端 API 允许应用程序向 NVDA 通信，以便执行诸如说文本或盲文消息等事项。<br>客户端 API 以 dll（动态链接库）的形式实施。此 dll 中的功能可以从支持查找和调用 dll 中任何符号的任何编程语言（如 Python 中的 ctys）或链接到 dll 中的任意编程语言中调用，用于 C、C++和C#等语言。<br>注：标题和库文件与nvda帮助器一起构建。如果您想自己构建它们，请参阅 NVDA 源分发中的源[nvdaHelper] 建筑.txt以获取说明。或者，您可以在<a href="http://www.nvda-project.org/nvdaControllerClient/%E6%89%BE%E5%88%B0%E9%A2%84%E5%88%B6%E5%8C%85%E3%80%82">http://www.nvda-project.org/nvdaControllerClient/找到预制包。</a><br>nvda控制器.dll：包含所有功能的dll。这是用于32位应用程序。您可以在应用程序中分发此dll。<br>nvda 控制器 32.lib 和 nvda 控制器 32.exp： nvda 控制器的进出口库 32.dll （在与 C/C++ 代码连接时使用）。<br>nvda控制器控制器 64.dll、nvda 控制器控制器 64.lib 和 nvda 控制器控制器 64.exp： 与上面相同， 但用于 64 位应用程序除外。<br>nvda 控制器.h： 包含所有所提供功能的申报的 C 头文件。<br>此dll中的所有功能在成功时返回0，在故障器上返回非0代码。故障可能是由于无法与 NVDA 通信，或者该函数的使用不正确。这些功能返回的错误代码始终是标准 Windows 错误代码。<br>有关所有可用功能的定义，请查看 nvda 控制器。这些功能都记录在注释中。</p></blockquote><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs Python"><span class="hljs-keyword">import</span> time<br><span class="hljs-keyword">import</span> ctypes<br><br><span class="hljs-comment">#Load the NVDA client library</span><br>clientLib=ctypes.windll.LoadLibrary(<span class="hljs-string">&#x27;./nvdaControllerClient64.dll&#x27;</span>)<br><br><span class="hljs-comment">#Test if NVDA is running, and if its not show a message</span><br>res=clientLib.nvdaController_testIfRunning()<br><span class="hljs-keyword">if</span> res!=<span class="hljs-number">0</span>:<br>errorMessage=<span class="hljs-built_in">str</span>(ctypes.WinError(res))<br>ctypes.windll.user32.MessageBoxW(<span class="hljs-number">0</span>,<span class="hljs-string">u&quot;Error: %s&quot;</span>%errorMessage,<span class="hljs-string">u&quot;Error communicating with NVDA&quot;</span>,<span class="hljs-number">0</span>)<br><br><span class="hljs-comment">#Speak and braille some messages</span><br><span class="hljs-keyword">for</span> count <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">4</span>):<br>clientLib.nvdaController_speakText(<span class="hljs-string">u&quot;This is a test client for NVDA&quot;</span>)<br>clientLib.nvdaController_brailleMessage(<span class="hljs-string">u&quot;Time: %g seconds&quot;</span>%(<span class="hljs-number">0.75</span>*count))<br>time.sleep(<span class="hljs-number">0.625</span>)<br>clientLib.nvdaController_cancelSpeech()<br>clientLib.nvdaController_speakText(<span class="hljs-string">u&quot;This is a test client for NVDA!&quot;</span>)<br>clientLib.nvdaController_brailleMessage(<span class="hljs-string">u&quot;Test completed!&quot;</span>)<br></code></pre></td></tr></table></figure>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>Python</tag>
+      
+      <tag>信息无障碍</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>白嫖 Replit 容器搭建 AList 网站</title>
+    <link href="/2023/03/10/create-alist/"/>
+    <url>/2023/03/10/create-alist/</url>
+    
+    <content type="html"><![CDATA[<h2 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h2><p>一般情况下，无论是使用一键安装或者 Docker 安装，部署 AList 是需要一台 VPS 的，但是鉴于 Replit 容器就提供了运行 AList 的所有条件，所以本文章介绍直接在免费的 Replit 中部署。<br>目前，Replit 会限制 AList 的运行，笔者使用的是 Team Repl 容器，经过多番尝试，截止到现在，下文提供的 Shell 代码已稳定运行一个月。所以本文仅是提供一个暂时可用的方法，不保证长期有效，如果挂了，请寻找其他方案。<br>由于众所周知的原因，国内链接 Replit 可能十分缓慢或404，必要时请自备科学上网工具。</p><h2 id="Replit-是啥"><a href="#Replit-是啥" class="headerlink" title="Replit 是啥"></a>Replit 是啥</h2><blockquote><p>Replit（ <a href="https://replit.com/">https://replit.com</a> ）是一个基于浏览器的云端协同开发平台，可用于构建开发环境、实时协作、托管网络应用等。Replit 提供可创建动态或者静态网站的容器，并会自动生成免费 https 域名。这代表着任何人都可以试用 Replit 的云服务器创建自己的网站，或者是其他的服务，用户创建的容器被称为 Repl 。</p></blockquote><p>由于每个用户都能分配到 1C  512M Ram 和 1G 的硬盘空间以及 100G/月的流量（这都是免费的）。我们就有了一台服务器，甚至可以用它跑 V2Ray 节点，牛不牛批？有时间再介绍！</p><h2 id="AList-是啥"><a href="#AList-是啥" class="headerlink" title="AList 是啥"></a>AList 是啥</h2><blockquote><p>一个支持多种存储的文件列表程序，使用 Gin 和 Solidjs。</p></blockquote><p>嗯……官方的介绍真就这点……<br><a href="https://github.com/alist-org/alist">官方 Github 项目地址</a></p><h2 id="步骤"><a href="#步骤" class="headerlink" title="步骤"></a>步骤</h2><p>0、准备工作</p><ul><li>一个聪明的大脑</li><li>一定的动手能力</li><li>善用搜索引擎</li><li>基础的 Shell 语法</li><li>科学上网工具（可选）</li></ul><p>1、注册 Replit：<a href="https://replit.com/">https://replit.com/</a><br>可选 Google、Apple ID、fb 或者 Github 账号一键登录，或者邮箱注册，邮箱注册的需要收信验证一下。想改印度区的可以改下，对于个人 Repl 有用，Team Repl 服务都是美区。<br>2、创建团队<br>登录后在菜单选择 Team，找到 Friends 处点击 Create your first Team，名称任意，然后创建团队。</p><p>3、创建 Create Team Repl 容器，模版选择：Bash。<br>容器名称建议不要包含 <code>AList</code> 字样，被封的概率小点。</p><p>4、Github 仓库的 Release 页面下载 alist-linux-musl-amd64.tar.gz 文件到本地，并解压得到 <code>alist</code> 主程序。<br>在 Repl 控制台页面 Files 区域找到 File Actions 展开，点击 Upload file，上传刚刚得到的 <code>alist</code> 程序文件至根目录。  </p><p>5、编辑页面中的 <code>main.sh</code>,将原来的代码替换为如下内容。</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-built_in">chmod</span> 777 alist<br><span class="hljs-keyword">while</span> <span class="hljs-literal">true</span>;<br><span class="hljs-keyword">do</span><br>ps -ef | pgrep alist | grep -v grep<br><span class="hljs-keyword">if</span> [ $? -ne 0 ]<br><span class="hljs-keyword">then</span><br><span class="hljs-built_in">nohup</span> ./alist server&amp;<br><span class="hljs-keyword">else</span><br><span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;runing&quot;</span><br><span class="hljs-keyword">fi</span><br><span class="hljs-built_in">sleep</span> 5 ;<br><span class="hljs-keyword">done</span> ;<br></code></pre></td></tr></table></figure><p>6、Shell 窗口执行下面命令，在输出部分，搜索 password 字样，记录下初始登录密码。</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">./alist admin<br></code></pre></td></tr></table></figure><p>7、点击 Run 按钮，在 webview 窗口中，查看是否有 AList 主页输出，有输出，就可以直接打开网址登录 AList 了。<br>网站的 URL 格式为：https:// Repl 名称 . Team 名称 . repl.co/。例如 alist.myteam.repl.co。<br>自定义域名下面介绍。</p><p>8、关于 AList 网盘的管理和存储挂载，就不多说了，参考 <a href="https://alist.nn.ci/zh/guide/drivers">官方文档</a>。</p><h2 id="Repl-休眠"><a href="#Repl-休眠" class="headerlink" title="Repl 休眠"></a>Repl 休眠</h2><p><strong>上文给出的 Shell 代码会每间隔5秒自检进程一次，若未运行则会自启动。理论上不存在 Repl 休眠问题。</strong><br>下面方法以后可能用得上，需要的话就看看。<br>Replit 在没有请求时不定期的休眠，具体解决方案是用 UptimeRobot 网站监控功能，方法很简单。<br>1、在 <a href="https://uptimerobot.com/">https://uptimerobot.com/</a>  注册一个账号。<br>2、新建一个监视，URL (or IP) 填写 AList 网址，间隔5分钟，超时30秒。这样让它定期发送 head 请求，能防止 Repl 休眠。</p><h2 id="绑定域名"><a href="#绑定域名" class="headerlink" title="绑定域名"></a>绑定域名</h2><p>在 Repl 控制台的 webview 区域，点击 Custom domain 按钮，弹出的对话框内点击 Create Domain Link，按照提示填写域名。再到自己的 DNS 服务商管理页面，添一条 Replit 给出的 A 或者 CNAME 记录。<br>DNS 刷新后就可以使用自定义域名访问啦！</p><h2 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h2><p>有限的硬盘空间和仅 10M 的带宽注定了它其实也干不了啥，可能不如各家网盘自己的网站和客户端好用。<br>白嫖的东西别要求高了，且用且珍惜吧！</p>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>Replit</tag>
+      
+      <tag>AList</tag>
+      
+      <tag>Linux</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>解决 Git 忽略目录和文件名大小写问题</title>
+    <link href="/2022/12/02/Modify-Git-configuration/"/>
+    <url>/2022/12/02/Modify-Git-configuration/</url>
+    
+    <content type="html"><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>本博客基于 <a href="https://hexo.io/">Hexo</a> 框架，使用本地预览服务检查无误后，便提交至 <a href="https://github.com/">GitHub</a> 。可访问线上网站时，许多 URL 被重定向到了站点的 <code>404.html</code>。明显是没有找到目录下的 <code>index.html</code>。</p><h2 id="排查问题"><a href="#排查问题" class="headerlink" title="排查问题"></a>排查问题</h2><p>首先，使用 <code>git status</code> 检查仓库目录，是干净的，对比本地的 <code>commit</code> 记录与远端仓库也是相同的。可是本地预览没问题，线上为什么就 404 了呢？<br>浏览器打开  GitHub 仓库页面，与本地目录反复仔细比对才发现，本地的目录如 <code>/tags/Python/</code> ,在线上是 <code>/tags/python/</code>。好家伙，大小写不一样！<br>把被重定向到 404 的 URL 中的大写手动改为小写后，页面成功加载。问题找到了。<br>所有的目录与文件名都使用小写字母不就没问题了嘛？可这不是个好办法。</p><h2 id="解决问题"><a href="#解决问题" class="headerlink" title="解决问题"></a>解决问题</h2><p>问题是由于 Git 默认对大小写不敏感造成的。<br>打开终端，使用以下命令查询：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs Git-Bash">git config --get core.ignorecase<br></code></pre></td></tr></table></figure><p>如果为 <code>true</code>，执行：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs Git-Bash">git config core.ignorecase false<br></code></pre></td></tr></table></figure><p>再次执行 <code>git config --get core.ignorecase</code>，会发现已经修改为 <code>false</code> 了，即开启了 Git 仓库的大小写敏感。<br><strong>注意：查询结果为 <code>true</code>，则表示本地 Git 对大小写不敏感，为 <code>false</code>，则对大小写敏感。且此命令仅针对当前目录生效。</strong></p><h2 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h2><p>修改完参数后，执行 <code>git status</code>，果然有目录被列出。重新 <code>add</code>、<code>commit</code>、<code>push</code>，问题解决！</p>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>Git</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>超简单一行命令快速搭建 HTTP 服务</title>
+    <link href="/2022/10/12/python-HTTPServer/"/>
+    <url>/2022/10/12/python-HTTPServer/</url>
+    
+    <content type="html"><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在安装有 <a href="https://www.python.org/">Python</a> 的 Windows 或 Linux 设备上，均可以通过 Python 的内部方法，建立一个内网可以快速访问的 WEB 服务。</p><h2 id="命令"><a href="#命令" class="headerlink" title="命令"></a>命令</h2><p><code>cd</code> 到要搭建 WEB 服务的目录下，执行如下一行命令。</p><p>Python 3.x：</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">python -m http.server 8000<br></code></pre></td></tr></table></figure><p>Python2.x：</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">python -m SimpleHTTPServer 8000<br></code></pre></td></tr></table></figure><p><code>8000</code> 是链接的端口号，这样本地在浏览器中就可以通过 <code>127.0.0.1:8000</code> 访问该目录，而局域网内的，例如其他电脑，就可以通过建立 WEB 服务的 IP 地址和端口访问该目录。</p>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>Windows</tag>
+      
+      <tag>Linux</tag>
+      
+      <tag>Python</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>Ubuntu 配置 OpenSSH</title>
+    <link href="/2022/05/09/installssh/"/>
+    <url>/2022/05/09/installssh/</url>
+    
+    <content type="html"><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><ul><li>系统：Ubuntu 22.04LTS </li><li>虚拟机：VMware Workstation Pro 16</li></ul><h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>最方便的方法当然是使用 apt 包管理器安装。</p><p>在终端中输入：</p><figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs pgsql">apt-<span class="hljs-keyword">get</span> install openssh-<span class="hljs-keyword">server</span><br></code></pre></td></tr></table></figure><p>大概率不会安装成功，可能会提示缺少 <code>openssh-client</code>，解决办法很简单：</p><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs routeros">apt-<span class="hljs-built_in">get</span> install openssh-client<br></code></pre></td></tr></table></figure><p><strong>注意：这里安装 openssh-client 的时候最好带上报错时给出的对应版本号。</strong></p><p>再次执行第一条命令。</p><h2 id="查看-IP-地址"><a href="#查看-IP-地址" class="headerlink" title="查看 IP 地址"></a>查看 IP 地址</h2><p>虚拟机使用桥接模式上网，安装好net-tools，执行<code>ifconfig</code>，获取虚拟机 IP。</p><h2 id="启动服务"><a href="#启动服务" class="headerlink" title="启动服务"></a>启动服务</h2><p>安装好 SSH-server 后默认自动启动，如果没有，执行以下命令：</p><figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs vim"><span class="hljs-keyword">ps</span> -ef |<span class="hljs-keyword">grep</span> sshd<br></code></pre></td></tr></table></figure><h2 id="连接"><a href="#连接" class="headerlink" title="连接"></a>连接</h2><p>打开 Windows 终端，执行：</p><figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">ssh</span> username@<span class="hljs-number">192</span>.<span class="hljs-number">168</span>.xx.xx<br></code></pre></td></tr></table></figure><p>输入密码就成功连接了。</p><p>不修改配置文件不能直接登录 root 用户，登录普通用户后可使用<code>su</code>命令切换。</p><p>当然也可以生成秘钥对快速连接，不多说。</p>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>Linux</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>Hugo 发布新文章</title>
+    <link href="/2019/09/28/Hugo-NewArticle/"/>
+    <url>/2019/09/28/Hugo-NewArticle/</url>
+    
+    <content type="html"><![CDATA[<h2 id="使用-Hugo-发布新文章。"><a href="#使用-Hugo-发布新文章。" class="headerlink" title="使用 Hugo 发布新文章。"></a>使用 Hugo 发布新文章。</h2><p>启动本地预览服务：</p><figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs cmd">hugo server<br></code></pre></td></tr></table></figure><p>生成静态文件：</p><figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs cmd">hugo<br></code></pre></td></tr></table></figure><p>上传：</p><figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs cmd">git add -A<br>git commit -m &#x27;说明&#x27;<br>git push<br></code></pre></td></tr></table></figure>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>Hugo</tag>
+      
+      <tag>Windows</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  
+</search>
